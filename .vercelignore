@@ -1,0 +1,15 @@
+# Keep the serverless function slim: only ship the API + the arbiter package.
+ui/
+tests/
+examples/
+docs/
+data/
+.git/
+.github/
+Dockerfile
+docker-compose.yml
+.dockerignore
+Makefile
+pytest.ini
+*.sqlite
+*.db

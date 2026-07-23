@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -57,9 +58,20 @@ class Storage:
         self.settings = settings or get_settings()
         self.db_path = Path(self.settings.db_path)
         self.json_dir = Path(self.settings.json_dir)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.json_dir.mkdir(parents=True, exist_ok=True)
-        self._init_db()
+        try:
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+            self.json_dir.mkdir(parents=True, exist_ok=True)
+            self._init_db()
+        except OSError:
+            # Read-only / unavailable filesystem (e.g. serverless like Vercel):
+            # fall back to a writable temp dir so the service still functions.
+            # The audit trail becomes ephemeral in that case.
+            base = Path(tempfile.gettempdir()) / "arbiter"
+            self.db_path = base / "arbitrations.sqlite"
+            self.json_dir = base / "arbitrations"
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+            self.json_dir.mkdir(parents=True, exist_ok=True)
+            self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)

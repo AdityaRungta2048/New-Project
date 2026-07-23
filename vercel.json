@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "builds": [
+    { "src": "api/index.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "api/index.py" }
+  ],
+  "env": {
+    "ARBITER_DB_PATH": "/tmp/arbitrations.sqlite",
+    "ARBITER_JSON_DIR": "/tmp/arbitrations",
+    "ARBITER_BACKEND_MODE": "auto"
+  }
+}

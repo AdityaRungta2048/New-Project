@@ -1,0 +1,7 @@
+# Slim dependency set for the Vercel serverless function.
+# Only what the API needs with the offline mock backend — no Streamlit/pandas,
+# and LangGraph is intentionally omitted (the pipeline uses its plain-Python
+# orchestrator fallback, with identical semantics, keeping the function small).
+# To enable real backends on Vercel, add: instructor, openai, anthropic.
+fastapi>=0.110
+pydantic>=2.6

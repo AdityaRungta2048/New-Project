@@ -132,6 +132,10 @@ so reviewers can run the **full multi-model system without paid API keys**.
 Provide `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` in your environment to light up
 the accuracy and logic critics too.
 
+**Hosting:** the API deploys to **Vercel** out of the box (`vercel.json` +
+`api/index.py`); the Streamlit UI and Ollama need a persistent host (Streamlit
+Cloud / Render / Railway / Fly.io). See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 ---
 
 ## API

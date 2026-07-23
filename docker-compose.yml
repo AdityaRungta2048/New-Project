@@ -1,0 +1,85 @@
+# Full stack: FastAPI service + Streamlit UI + local Ollama (Llama) for the
+# completeness critic. SQLite is a file on a shared named volume (no separate
+# DB service needed). Reviewers can run the whole system with `docker compose up`
+# and NO paid API keys — the completeness critic runs on the local Llama, and
+# accuracy/logic fall back to the deterministic mock backend unless you supply
+# OPENAI_API_KEY / ANTHROPIC_API_KEY.
+#
+#   docker compose up --build
+#   API  -> http://localhost:8000/docs
+#   UI   -> http://localhost:8501
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # One-shot: pull the Llama model the completeness critic uses, then exit.
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["sh", "-c", "ollama pull ${ARBITER_OLLAMA_MODEL:-llama3.2}"]
+    restart: "no"
+
+  api:
+    build: .
+    depends_on:
+      - ollama
+    ports:
+      - "8000:8000"
+    environment:
+      # Spec routing: accuracy->GPT-4o, logic->Claude, completeness->local Llama.
+      # In `auto` mode, accuracy/logic fall back to mock when no key is present.
+      ARBITER_ACCURACY_BACKEND: ${ARBITER_ACCURACY_BACKEND:-openai}
+      ARBITER_LOGIC_BACKEND: ${ARBITER_LOGIC_BACKEND:-anthropic}
+      ARBITER_COMPLETENESS_BACKEND: ${ARBITER_COMPLETENESS_BACKEND:-ollama}
+      ARBITER_ADJUDICATOR_BACKEND: ${ARBITER_ADJUDICATOR_BACKEND:-mock}
+      ARBITER_BACKEND_MODE: auto
+      ARBITER_OLLAMA_MODEL: ${ARBITER_OLLAMA_MODEL:-llama3.2}
+      OLLAMA_HOST: http://ollama:11434
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ARBITER_DB_PATH: /app/data/arbitrations.sqlite
+      ARBITER_JSON_DIR: /app/data/arbitrations
+    volumes:
+      - data:/app/data
+
+  ui:
+    build: .
+    depends_on:
+      - api
+    command:
+      ["streamlit", "run", "ui/streamlit_app.py",
+       "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]
+    ports:
+      - "8501:8501"
+    environment:
+      ARBITER_ACCURACY_BACKEND: ${ARBITER_ACCURACY_BACKEND:-openai}
+      ARBITER_LOGIC_BACKEND: ${ARBITER_LOGIC_BACKEND:-anthropic}
+      ARBITER_COMPLETENESS_BACKEND: ${ARBITER_COMPLETENESS_BACKEND:-ollama}
+      ARBITER_ADJUDICATOR_BACKEND: ${ARBITER_ADJUDICATOR_BACKEND:-mock}
+      ARBITER_BACKEND_MODE: auto
+      ARBITER_OLLAMA_MODEL: ${ARBITER_OLLAMA_MODEL:-llama3.2}
+      OLLAMA_HOST: http://ollama:11434
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ARBITER_DB_PATH: /app/data/arbitrations.sqlite
+      ARBITER_JSON_DIR: /app/data/arbitrations
+    volumes:
+      - data:/app/data
+
+volumes:
+  ollama:
+  data:

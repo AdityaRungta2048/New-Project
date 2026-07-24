@@ -18,6 +18,46 @@ This project has two runtime shapes with very different hosting needs:
 
 ---
 
+## Deploy the full UI to Streamlit Community Cloud (recommended, free, keyless)
+
+This is the easiest way to put the **Verdict Explorer UI** online. Streamlit
+Community Cloud runs the app straight from this GitHub repo — no keys, no CLI, no
+credit card. The repo is already configured for it (`ui/streamlit_app.py` entry,
+root `requirements.txt`, `.streamlit/config.toml` theme).
+
+1. Push these files to your default branch (already done if you merged the PR).
+2. Go to <https://share.streamlit.io> and sign in with GitHub (authorise access
+   to the `New-Project` repo — public repos work out of the box).
+3. Click **Create app → Deploy a public app from GitHub** and set:
+   - **Repository:** `AdityaRungta2048/New-Project`
+   - **Branch:** `main`
+   - **Main file path:** `ui/streamlit_app.py`
+   - *(Advanced → Python version: 3.11 or newer.)*
+4. Click **Deploy**. First build takes a few minutes while dependencies install;
+   after that your app is live at
+   `https://<your-app-name>.streamlit.app`.
+
+It runs on the deterministic **mock backend** by default, so every view works
+with no API keys. To route critics through real models, open
+**Manage app → Settings → Secrets** and add:
+
+```toml
+ARBITER_ACCURACY_BACKEND = "openai"
+ARBITER_LOGIC_BACKEND = "anthropic"
+OPENAI_API_KEY = "sk-..."
+ANTHROPIC_API_KEY = "sk-ant-..."
+```
+
+(Streamlit Cloud exposes secrets as environment variables, which the app reads.
+Leave the completeness critic on `mock` — Ollama has no home on Community Cloud —
+or point `OLLAMA_HOST` at an external Ollama instance.)
+
+> The SQLite audit trail is ephemeral on Community Cloud (the container's disk
+> resets on reboot), which is fine for a live demo. For a durable trail, use a
+> Docker host with a mounted volume (below).
+
+---
+
 ## Deploy the API to Vercel
 
 The repo is already configured (`vercel.json`, `api/index.py`,

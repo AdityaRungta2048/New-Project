@@ -1,0 +1,14 @@
+# Streamlit configuration — used locally and on Streamlit Community Cloud.
+# The app runs keyless on the deterministic mock backend by default; add API
+# keys via the Cloud "Secrets" manager to route critics through real models.
+
+[theme]
+primaryColor = "#5b5ef0"          # iris accent, matches the Verdict Console
+base = "light"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+headless = true
